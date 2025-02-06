@@ -1,0 +1,15 @@
+matplotlib==3.10.0
+matplotlib-inline==0.1.7
+matplotlib-venn==1.1.1
+opencv-contrib-python==4.10.0.84
+opencv-python==4.10.0.84
+opencv-python-headless==4.11.0.86
+scikit-learn==1.6.1
+tensorflow==2.18.0
+tensorflow-datasets==4.9.7
+tensorflow-hub==0.16.1
+tensorflow-io-gcs-filesystem==0.37.1
+tensorflow-metadata==1.16.1
+tensorflow-probability==0.24.0
+tensorflow-text==2.18.1
+tqdm==4.67.1
