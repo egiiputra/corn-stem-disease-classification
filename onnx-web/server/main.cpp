@@ -1,9 +1,21 @@
-#include <iostream>
+#include "crow.h"
 
-using namespace std;
+int main()
+{
+    // TODO: Load onnx model
+    crow::SimpleApp app;
 
-int main() {
-    cout << "Hello world" << endl;
+    CROW_ROUTE(app, "/")([](){
+        return "Hello world";
+    });
 
-    return 0;
+    CROW_ROUTE(app, "/predicts")([](){
+        // TODO: Get image data in body request
+        // TODO: Preprocessing image into approriate format and size
+        // TODO: pass preprocessing result into model
+        // TODO: return json (key: result, val: prediction probability)
+        return "Hello world";
+    });
+
+    app.port(18080).multithreaded().run();
 }
