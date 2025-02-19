@@ -8,6 +8,8 @@ from fastapi import (
 )
 import tensorflow as tf
 
+MODEL_NAME = "vgg16-original-adam"
+
 app = FastAPI()
 
 @app.get("/")
@@ -16,7 +18,6 @@ def read_root():
 
 @app.post("/predicts")
 async def predicts(images: List[UploadFile], response: Response):
-
     # Check MIME Type make sure that file is image
     for image in images:
         if image.content_type not in ('image/jpeg', 'image/png'):
@@ -42,29 +43,16 @@ async def predicts(images: List[UploadFile], response: Response):
 
     # TODO: Preprocessing image into approriate format and size
     # TODO: pass preprocessing result into model
-    # TODO: return json (key: result, val: prediction probability)
-    return {"filenames": [image.filename for image in images]}
-    # return 
-# from typing import Annotated
-
-# from fastapi import FastAPI, File, UploadFile
-
-# app = FastAPI()
-
-
-# @app.post("/files/")
-# async def create_file(file: Annotated[bytes, File()]):
-#     return {"file_size": len(file)}
-
-
-# @app.post("/uploadfile/")
-# async def create_upload_file(file: UploadFile):
-#     return {"filename": file.filename}
-# from fastapi import FastAPI, File, UploadFile
-# from typing import List
-
-# app = FastAPI()
-
-# @app.post("/uploadfiles/")
-# async def upload_files(files: List[UploadFile]):
-#     return {"filenames": [file.filename for file in files]}
+    return {
+        "model": MODEL_NAME,
+        "predictions": [
+            {
+                "filename": "photo1.jpg",
+                "scores": {
+                    "sehat": 0.2,
+                    "giberella": 0.5, 
+                    "anthracnose": 0.3
+                }
+            }
+        ]
+    }
