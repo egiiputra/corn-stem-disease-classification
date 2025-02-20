@@ -8,10 +8,16 @@ from fastapi import (
     Response, 
     status
 )
-from fastapi.responses import StreamingResponse
 
-import tensorflow as tf
-import tensorflow.lite as tflite  # Use `import tflite_runtime.interpreter as tflite` if using tflite-runtime
+from tensorflow import (
+    convert_to_tensor,
+    uint8, 
+    float32
+)
+from tensorflow.io import decode_image
+from tensorflow.image import resize as image_resize
+import tensorflow.lite as tflite 
+
 
 CLASS_NAMES = ['sehat', 'giberella', 'anthracnose']
 
@@ -43,19 +49,19 @@ async def predicts(images: List[UploadFile], response: Response):
 
     for i, image in enumerate(images):
         # Get image data from body request
-        input_tensor = tf.io.decode_image(
+        input_tensor = decode_image(
             await image.read(),
             channels=3,
-            dtype=tf.uint8,
+            dtype=uint8,
             expand_animations=False
         )
         input_tensors.append(input_tensor)
 
     predictions = []
     for i, input_tensor in enumerate(input_tensors):
-        input_tensor = tf.image.resize(input_tensor, size=(224, 224), method='nearest')
+        input_tensor = image_resize(input_tensor, size=(224, 224), method='nearest')
 
-        input_tensor = tf.convert_to_tensor([ input_tensor / 255 ], dtype=tf.float32)
+        input_tensor = convert_to_tensor([ input_tensor / 255 ], dtype=float32)
 
         # Set input tensor
         interpreter.set_tensor(input_details[0]['index'], input_tensor)
