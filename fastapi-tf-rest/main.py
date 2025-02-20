@@ -1,3 +1,5 @@
+import json
+
 from typing import Union, List
 from fastapi import (
     FastAPI, 
@@ -6,9 +8,22 @@ from fastapi import (
     Response, 
     status
 )
+from fastapi.responses import StreamingResponse
+
 import tensorflow as tf
+import tensorflow.lite as tflite  # Use `import tflite_runtime.interpreter as tflite` if using tflite-runtime
+
+CLASS_NAMES = ['sehat', 'giberella', 'anthracnose']
 
 MODEL_NAME = "vgg16-original-adam"
+
+# Load the TFLite model
+interpreter = tflite.Interpreter(model_path=f"models/{MODEL_NAME}.tflite")
+interpreter.allocate_tensors()  # Allocate memory for the model
+
+# Get input/output details
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 
 app = FastAPI()
 
@@ -23,36 +38,39 @@ async def predicts(images: List[UploadFile], response: Response):
         if image.content_type not in ('image/jpeg', 'image/png'):
             response.status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
             return { 'message' : 'Just can receive image file type'}
-    
-    # === GET INPUT ===
+
     input_tensors = []
 
     for i, image in enumerate(images):
         # Get image data from body request
-        tmp = tf.io.decode_image(
+        input_tensor = tf.io.decode_image(
             await image.read(),
             channels=3,
-            dtype=tf.dtypes.uint8,
+            dtype=tf.uint8,
             expand_animations=False
         )
+        input_tensors.append(input_tensor)
 
-        tmp = tf.image.resize(tmp, size=(224, 224), method='nearest')
-        input_tensors.append(tmp)
+    predictions = []
+    for i, input_tensor in enumerate(input_tensors):
+        input_tensor = tf.image.resize(input_tensor, size=(224, 224), method='nearest')
 
-    input_tensors = tf.convert_to_tensor(input_tensors, dtype=tf.float32)
+        input_tensor = tf.convert_to_tensor([ input_tensor / 255 ], dtype=tf.float32)
 
-    # TODO: Preprocessing image into approriate format and size
-    # TODO: pass preprocessing result into model
+        # Set input tensor
+        interpreter.set_tensor(input_details[0]['index'], input_tensor)
+        # Run inference
+        interpreter.invoke()
+        # Get the output
+        output_data = interpreter.get_tensor(output_details[0]['index'])
+        output_data = output_data.tolist()
+        
+        predictions.append({ 
+            "file_name": images[i].filename,
+            "scores": {clas:output_data[0][i] for i, clas in enumerate(CLASS_NAMES) }
+        })
+
     return {
         "model": MODEL_NAME,
-        "predictions": [
-            {
-                "filename": "photo1.jpg",
-                "scores": {
-                    "sehat": 0.2,
-                    "giberella": 0.5, 
-                    "anthracnose": 0.3
-                }
-            }
-        ]
+        "predictions": predictions
     }
